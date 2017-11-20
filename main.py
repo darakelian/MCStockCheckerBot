@@ -4,6 +4,7 @@ import re
 import json
 import urllib2
 
+
 reddit = None
 subreddit = None
 posts_replied_to = None
