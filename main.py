@@ -24,7 +24,9 @@ def setup_bot():
 
 
 def start_searching():
-    for submission in subreddit.new(limit=10):
+    global posts_replied_to
+
+    for submission in subreddit.stream.submissions():
         if submission.id not in posts_replied_to:
             #  only operate on links that are pointed to microcenter.com
             if re.search("microcenter.com", submission.url, re.IGNORECASE):
@@ -34,6 +36,8 @@ def start_searching():
                     page = urllib2.urlopen(submission.url)
                     stocks = get_stock(page)
                     reply_stocks(submission, stocks)
+                    posts_replied_to.append(submission.id)
+                    mark_post_as_replied(submission.id)
                 except urllib2.URLError:
                     reply_with_error(submission, "urlerror")
 
@@ -62,13 +66,18 @@ def reply_stocks(submission, stocks):
 
 def reply_with_error(submission, errortype):
     if errortype == "urlerror":
-        submission.reply("I was unable to find stock information for this page.\n  " + get_base_submission())
+        submission.reply("I was unable to find stock information for this page." + get_base_submission())
 
 
 def get_base_submission():
     return """\n\nThis bot was created by /u/hiloser12221\n\n
 [source code](https://github.com/darakelian/MCStockCheckerBot) [report errors](https://vec3d.xyz/projects/reporterror) 
     """
+
+
+def mark_post_as_replied(post_id):
+    with open("posts_replied_to.txt", "a+") as f:
+        f.write(post_id + "\n")
 
 
 if __name__ == "__main__":
