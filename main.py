@@ -49,27 +49,26 @@ def get_stock(page_object):
 
 
 def reply_stocks(submission, stocks):
-    header = ("|Store | Quantity|  "
-              "|------|---------|")
+    print "replying to submission %s" % submission.id
+    header = "Store | Quantity\n------|---------\n"
 
     for stock in stocks:
-        header += "|" + stock[0] + "|" + str(stock[1]) + "|\n"
+        header += " " + stock[0] + " | " + str(stock[1]) + "\n"
 
-        reply = header + get_base_submission()
+    reply = header + get_base_submission()
 
-        submission.reply(reply)
+    submission.reply(reply)
 
 
 def reply_with_error(submission, errortype):
     if errortype == "urlerror":
-        submission.reply("I was unable to find stock information for this page.  " + get_base_submission())
+        submission.reply("I was unable to find stock information for this page.\n  " + get_base_submission())
 
 
 def get_base_submission():
-    return ("This bot was created by /u/hiloser12221  "
-            "source code [here](https://github.com/darakelian/MCStockCheckerBot) "
-            "report errors [here](https://vec3d.xyz/projects/reporterror) "
-            )
+    return """\n\nThis bot was created by /u/hiloser12221\n\n
+[source code](https://github.com/darakelian/MCStockCheckerBot) [report errors](https://vec3d.xyz/projects/reporterror) 
+    """
 
 
 if __name__ == "__main__":
