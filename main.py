@@ -14,7 +14,7 @@ def setup_bot():
     global reddit, subreddit, posts_replied_to
 
     reddit = praw.Reddit('mc_bot')
-    subreddit = reddit.subreddit("StockCheckerTesting")
+    subreddit = reddit.subreddit("StockCheckerTesting+buildapcsales")
 
     if not os.path.isfile("posts_replied_to.txt"):
         posts_replied_to = []
