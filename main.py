@@ -47,8 +47,15 @@ def start_searching():
 def get_stock(page_object):
     raw_html = page_object.read()
     #  Extract stock from javascript
-    stock_json = re.search("(?<=inventory = )(.*)", raw_html).group(0).strip()
-    stocks = json.loads(stock_json)
+    
+    reg = re.search("(?<=inventory = )(.*)", raw_html)
+    
+    try:
+    	stock_json = reg.group(0).strip()
+    	stocks = json.loads(stock_json)
+    except AttributeError:
+    	print "Error accessing json"
+    	return []
 
     #  Return the stocks as tuples
     return [(x["storeName"], x["qoh"]) for x in stocks]
