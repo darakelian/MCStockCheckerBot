@@ -14,7 +14,7 @@ def setup_bot():
     global reddit, subreddit, posts_replied_to
 
     reddit = praw.Reddit('mc_bot')
-    subreddit = reddit.subreddit("StockCheckerTesting+buildapcsales")
+    subreddit = reddit.subreddit("StockCheckerTesting")
 
     if not os.path.isfile("posts_replied_to.txt"):
         posts_replied_to = []
@@ -36,16 +36,24 @@ def start_searching():
                 print "navigating to %s" % submission.url
                 try:
                     page = urllib2.urlopen(submission.url)
-                    stocks = get_stock(page)
-                    reply_stocks(submission, stocks)
+                    raw_html = page.read()
+                    
+                    stocks = get_stock(raw_html)
+                    stocks_reply = reply_stocks(stocks)
+                    
+                    price = get_price(raw_html)
+                    price_reply = reply_price(price)
+                    
+                    master_reply = stocks_reply + price_reply + get_base_submission()
+                    submission.reply(master_reply)
+                    
                     posts_replied_to.append(submission.id)
                     mark_post_as_replied(submission.id)
                 except urllib2.URLError:
                     reply_with_error(submission, "urlerror")
 
 
-def get_stock(page_object):
-    raw_html = page_object.read()
+def get_stock(raw_html):
     #  Extract stock from javascript
     
     reg = re.search("(?<=inventory = )(.*)", raw_html)
@@ -54,23 +62,37 @@ def get_stock(page_object):
     	stock_json = reg.group(0).strip()
     	stocks = json.loads(stock_json)
     except AttributeError:
-    	print "Error accessing json"
+    	print "Error accessing JSON"
     	return []
 
     #  Return the stocks as tuples
     return [(x["storeName"], x["qoh"]) for x in stocks]
 
 
-def reply_stocks(submission, stocks):
-    print "replying to submission %s" % submission.id
-    header = "Store | Quantity\n------|---------\n"
+def get_price(raw_html):
+	reg = re.search("(?s)(?<=dataLayer = \[)(.*?)(?=\];)", raw_html)
+	try:
+		dataLayer_json = reg.group(0).strip()
+		dataLayer_json = dataLayer_json.replace("'", "\"")
+		dataLayerObj = json.loads(dataLayer_json)
+	except AttributeError:
+		print "Error accessing JSON"
+		return "Couldn't determine price."
+	
+	return "$" + dataLayerObj["productPrice"]
+
+def reply_stocks(stocks):
+    print "Generating reply"
+    header = "I found this product at the following stores\n\nStore | Quantity\n------|---------\n"
 
     for stock in stocks:
         header += " " + stock[0] + " | " + str(stock[1]) + "\n"
 
-    reply = header + get_base_submission()
+    return header
 
-    submission.reply(reply)
+
+def reply_price(price):
+	return "\n\nAdditionally, I found the item priced at %s\n\n" % price
 
 
 def reply_with_error(submission, errortype):
