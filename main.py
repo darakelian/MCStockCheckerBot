@@ -14,7 +14,7 @@ def setup_bot():
     global reddit, subreddit, posts_replied_to
 
     reddit = praw.Reddit('mc_bot')
-    subreddit = reddit.subreddit("StockCheckerTesting")
+    subreddit = reddit.subreddit("buildapcsales")
 
     if not os.path.isfile("posts_replied_to.txt"):
         posts_replied_to = []
@@ -28,29 +28,33 @@ def start_searching():
     global posts_replied_to
 
     print "Listening for posts from microcenter.com..."
-    for submission in subreddit.stream.submissions():
-        if submission.id not in posts_replied_to:
-            #  only operate on links that are pointed to microcenter.com
-            if re.search("microcenter.com", submission.url, re.IGNORECASE):
-                #  travel to the link and start parsing
-                print "navigating to %s" % submission.url
-                try:
-                    page = urllib2.urlopen(submission.url)
-                    raw_html = page.read()
-                    
-                    stocks = get_stock(raw_html)
-                    stocks_reply = reply_stocks(stocks)
-                    
-                    price = get_price(raw_html)
-                    price_reply = reply_price(price)
-                    
-                    master_reply = stocks_reply + price_reply + get_base_submission()
-                    submission.reply(master_reply)
-                    
-                    posts_replied_to.append(submission.id)
-                    mark_post_as_replied(submission.id)
-                except urllib2.URLError:
-                    reply_with_error(submission, "urlerror")
+    try
+    	for submission in subreddit.stream.submissions():
+        	if submission.id not in posts_replied_to:
+            	#  only operate on links that are pointed to microcenter.com
+            	if re.search("microcenter.com", submission.url, re.IGNORECASE):
+                	#  travel to the link and start parsing
+                	print "navigating to %s" % submission.url
+                	try:
+                    	page = urllib2.urlopen(submission.url)
+                    	raw_html = page.read()
+                    	
+                    	stocks = get_stock(raw_html)
+                    	stocks_reply = reply_stocks(stocks)
+                    	
+                    	price = get_price(raw_html)
+                    	price_reply = reply_price(price)
+                    	
+                    	master_reply = stocks_reply + price_reply + get_base_submission()
+                    	submission.reply(master_reply)
+                    	
+                    	posts_replied_to.append(submission.id)
+                    	mark_post_as_replied(submission.id)
+                	except urllib2.URLError:
+                    	reply_with_error(submission, "urlerror")
+     except RequestException:
+     	print "Some sort of error with reddit API. Restarting bot"
+     	start_searching()
 
 
 def get_stock(raw_html):
