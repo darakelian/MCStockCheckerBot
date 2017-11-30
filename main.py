@@ -28,18 +28,18 @@ def start_searching():
     global posts_replied_to
 
     print "Listening for posts from microcenter.com..."
-    try
+    try:
     	for submission in subreddit.stream.submissions():
-        	if submission.id not in posts_replied_to:
-            	#  only operate on links that are pointed to microcenter.com
-            	if re.search("microcenter.com", submission.url, re.IGNORECASE):
+    		if submission.id not in posts_replied_to:
+    			#  only operate on links that are pointed to microcenter.com
+    			if re.search("microcenter.com", submission.url, re.IGNORECASE):
                 	#  travel to the link and start parsing
                 	print "navigating to %s" % submission.url
                 	try:
-                    	page = urllib2.urlopen(submission.url)
-                    	raw_html = page.read()
-                    	
-                    	stocks = get_stock(raw_html)
+                		page = urllib2.urlopen(submission.url)
+                		raw_html = page.read()
+                		
+                		stocks = get_stock(raw_html)
                     	stocks_reply = reply_stocks(stocks)
                     	
                     	price = get_price(raw_html)
