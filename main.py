@@ -4,6 +4,7 @@ import re
 import json
 import urllib2
 
+import prawcore
 
 reddit = None
 subreddit = None
@@ -29,61 +30,62 @@ def start_searching():
 
     print "Listening for posts from microcenter.com..."
     try:
-    	for submission in subreddit.stream.submissions():
-    		if submission.id not in posts_replied_to:
-    			#  only operate on links that are pointed to microcenter.com
-    			if re.search("microcenter.com", submission.url, re.IGNORECASE):
-                	#  travel to the link and start parsing
-                	print "navigating to %s" % submission.url
-                	try:
-                		page = urllib2.urlopen(submission.url)
-                		raw_html = page.read()
-                		
-                		stocks = get_stock(raw_html)
-                    	stocks_reply = reply_stocks(stocks)
-                    	
-                    	price = get_price(raw_html)
-                    	price_reply = reply_price(price)
-                    	
-                    	master_reply = stocks_reply + price_reply + get_base_submission()
-                    	submission.reply(master_reply)
-                    	
-                    	posts_replied_to.append(submission.id)
-                    	mark_post_as_replied(submission.id)
-                	except urllib2.URLError:
-                    	reply_with_error(submission, "urlerror")
-     except RequestException:
-     	print "Some sort of error with reddit API. Restarting bot"
-     	start_searching()
+        for submission in subreddit.stream.submissions():
+            if submission.id not in posts_replied_to:
+                #  only operate on links that are pointed to microcenter.com
+                if re.search("microcenter.com", submission.url, re.IGNORECASE):
+                    #  travel to the link and start parsing
+                    print "navigating to %s" % submission.url
+                    try:
+                        page = urllib2.urlopen(submission.url)
+                        raw_html = page.read()
+
+                        stocks = get_stock(raw_html)
+                        stocks_reply = reply_stocks(stocks)
+
+                        price = get_price(raw_html)
+                        price_reply = reply_price(price)
+
+                        master_reply = stocks_reply + price_reply + get_base_submission()
+                        submission.reply(master_reply)
+
+                        posts_replied_to.append(submission.id)
+                        mark_post_as_replied(submission.id)
+                    except urllib2.URLError:
+                        reply_with_error(submission, "urlerror")
+    except prawcore.exceptions.RequestException:
+        print "Some sort of error with reddit API. Restarting bot"
+        start_searching()
 
 
 def get_stock(raw_html):
     #  Extract stock from javascript
-    
-    reg = re.search("(?<=inventory = )(.*)", raw_html)
-    
-    try:
-    	stock_json = reg.group(0).strip()
-    	stocks = json.loads(stock_json)
-    except AttributeError:
-    	print "Error accessing JSON"
-    	return []
 
-    #  Return the stocks as tuples
+    reg = re.search("(?<=inventory = )(.*)", raw_html)
+
+    try:
+        stock_json = reg.group(0).strip()
+        stocks = json.loads(stock_json)
+    except AttributeError:
+        print "Error accessing JSON"
+        return []
+
+    # Return the stocks as tuples
     return [(x["storeName"], x["qoh"]) for x in stocks]
 
 
 def get_price(raw_html):
-	reg = re.search("(?s)(?<=dataLayer = \[)(.*?)(?=\];)", raw_html)
-	try:
-		dataLayer_json = reg.group(0).strip()
-		dataLayer_json = dataLayer_json.replace("'", "\"")
-		dataLayerObj = json.loads(dataLayer_json)
-	except AttributeError:
-		print "Error accessing JSON"
-		return "Couldn't determine price."
-	
-	return "$" + dataLayerObj["productPrice"]
+    reg = re.search("(?s)(?<=dataLayer = \[)(.*?)(?=\];)", raw_html)
+    try:
+        data_layer_json = reg.group(0).strip()
+        data_layer_json = data_layer_json.replace("'", "\"")
+        data_layer_obj = json.loads(data_layer_json)
+    except AttributeError:
+        print "Error accessing JSON"
+        return "Couldn't determine price."
+
+    return "$" + data_layer_obj["productPrice"]
+
 
 def reply_stocks(stocks):
     print "Generating reply"
@@ -96,7 +98,7 @@ def reply_stocks(stocks):
 
 
 def reply_price(price):
-	return "\n\nAdditionally, I found the item priced at %s\n\n" % price
+    return "\n\nAdditionally, I found the item priced at %s\n\n" % price
 
 
 def reply_with_error(submission, errortype):
