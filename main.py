@@ -92,7 +92,8 @@ def reply_stocks(stocks):
     header = "I found this product at the following stores\n\nStore | Quantity\n------|---------\n"
 
     for stock in stocks:
-        header += " " + stock[0] + " | " + str(stock[1]) + "\n"
+        if stock[1] > 0:
+            header += " " + stock[0] + " | " + str(stock[1]) + "\n"
 
     return header
 
